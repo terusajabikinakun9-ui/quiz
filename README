@@ -1,0 +1,28 @@
+# CCTV Placement Optimization Simulator
+
+## Deskripsi
+Aplikasi web untuk simulasi optimasi penempatan CCTV guna memaksimalkan cakupan area pengawasan.
+
+## Fitur
+- Simulasi penempatan CCTV
+- Pengaturan FOV dan Radius
+- Visualisasi area cakupan
+- Dashboard analisis
+- Perbandingan hasil optimasi
+
+## Teknologi
+- Python
+- HTML
+- CSS
+- JavaScript
+- Chart.js
+
+## Screenshot
+(Tambahkan gambar aplikasi)
+
+## Cara Menjalankan
+
+python server.py
+
+Buka:
+http://localhost:8000
