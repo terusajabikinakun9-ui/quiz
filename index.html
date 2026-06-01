@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OptiWatch: Simulasi Optimasi Penempatan CCTV & Pencarian Lokal</title>
+    <!-- Google Fonts: Plus Jakarta Sans & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&display=swap" rel="stylesheet">
+    <!-- FontAwesome for Premium Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- CSS Stylesheet -->
+    <link rel="stylesheet" href="style.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <i class="fa-solid fa-eye-low-vision logo-icon"></i>
+                <div class="logo-text">
+                    <h1>TempatkanCCTVmu</h1>
+                    <span>CCTV & Search Optimizer</span>
+                </div>
+            </div>
+
+            <nav class="nav-tabs">
+                <button class="tab-btn active" data-tab="tab-cctv" id="btn-tab-cctv">
+                    <i class="fa-solid fa-building-user"></i>
+                    <span>Optimasi CCTV Gedung</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-benchmark" id="btn-tab-benchmark">
+                    <i class="fa-solid fa-mountain"></i>
+                    <span>Benchmark Rastrigin</span>
+                </button>
+                <button class="tab-btn" data-tab="tab-comparison" id="btn-tab-comparison">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Analisis Komparatif</span>
+                </button>
+            </nav>
+
+            <!-- Global Parameter Controls -->
+            <div class="sidebar-section">
+                <h3><i class="fa-solid fa-sliders"></i> Kontrol Global</h3>
+                
+                <div class="control-group">
+                    <label for="speed-range">Kecepatan Simulasi</label>
+                    <div class="range-container">
+                        <input type="range" id="speed-range" min="1" max="100" value="50">
+                        <span id="speed-value" class="badge">Normal</span>
+                    </div>
+                </div>
+
+                <div class="control-group" id="cctv-count-group">
+                    <label for="cctv-count">Jumlah Kamera CCTV</label>
+                    <div class="range-container">
+                        <input type="range" id="cctv-count" min="1" max="8" value="4">
+                        <span id="cctv-count-value" class="badge">4</span>
+                    </div>
+                </div>
+
+                <div class="control-group" id="cctv-fov-group">
+                    <label for="cctv-fov">Field of View (FOV)</label>
+                    <div class="range-container">
+                        <input type="range" id="cctv-fov" min="30" max="180" value="90" step="5">
+                        <span id="cctv-fov-value" class="badge">90°</span>
+                    </div>
+                </div>
+
+                <div class="control-group" id="cctv-range-group">
+                    <label for="cctv-range">Jangkauan Sensor (px)</label>
+                    <div class="range-container">
+                        <input type="range" id="cctv-range" min="50" max="250" value="120" step="5">
+                        <span id="cctv-range-value" class="badge">120px</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-credit">
+                <p>Simulasi Optimasi Pencarian Lokal</p>
+                <span>Sistem Komputasi & AI © 2026</span>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header Status -->
+            <header class="top-header">
+                <div class="header-title-container">
+                    <h2 id="current-tab-title">Optimasi Penempatan CCTV dalam Gedung</h2>
+                    <p id="current-tab-desc">Mencari konfigurasi posisi dan sudut kamera untuk memaksimalkan cakupan visual gedung.</p>
+                </div>
+                <div class="system-status">
+                    <span class="status-indicator idle" id="status-dot"></span>
+                    <span id="status-text">Status: Siap</span>
+                </div>
+            </header>
+
+            <!-- TAB 1: CCTV OPTIMIZATION -->
+            <section class="tab-pane active" id="tab-cctv">
+                <div class="dashboard-grid">
+                    <!-- Column 1: Canvas and Simulation Controls -->
+                    <div class="canvas-card card grid-span-2">
+                        <div class="card-header">
+                            <span class="card-title"><i class="fa-solid fa-map"></i> Denah Lantai & Sinar Jangkauan CCTV</span>
+                            <div class="canvas-actions">
+                                <button class="action-btn text-btn" id="btn-change-layout" title="Ubah Layout Gedung">
+                                    <i class="fa-solid fa-rotate"></i> Ganti Denah
+                                </button>
+                                <button class="action-btn text-btn" id="btn-manual-place" title="Letakkan Kamera secara Manual">
+                                    <i class="fa-solid fa-hand-pointer"></i> Edit Manual
+                                </button>
+                            </div>
+                        </div>
+                        <div class="canvas-wrapper">
+                            <canvas id="cctv-canvas" width="600" height="400"></canvas>
+                            <div class="canvas-overlay" id="canvas-overlay-msg">
+                                <p>Klik pada kanvas untuk memosisikan kamera terpilih</p>
+                            </div>
+                        </div>
+                        <div class="sim-controls">
+                            <div class="btn-group">
+                                <button class="btn btn-primary" id="btn-cctv-play">
+                                    <i class="fa-solid fa-play"></i> Mulai
+                                </button>
+                                <button class="btn btn-secondary" id="btn-cctv-step">
+                                    <i class="fa-solid fa-forward-step"></i> Langkah
+                                </button>
+                                <button class="btn btn-danger" id="btn-cctv-pause" disabled>
+                                    <i class="fa-solid fa-pause"></i> Jeda
+                                </button>
+                                <button class="btn btn-outline" id="btn-cctv-reset">
+                                    <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                                </button>
+                            </div>
+                            <div class="restart-wrapper">
+                                <label class="switch-container">
+                                    <input type="checkbox" id="cctv-restart-toggle">
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <span>Random Restart (HC)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Parameters Panel & Live Statistics -->
+                    <div class="sidebar-card-grid grid-span-1">
+                        <!-- Live Stats Card -->
+                        <div class="card stats-card">
+                            <div class="card-header">
+                                <span class="card-title"><i class="fa-solid fa-square-poll-vertical"></i> Metrik Real-time</span>
+                            </div>
+                            <div class="stats-grid">
+                                <div class="stat-box">
+                                    <span class="stat-label">Cakupan (Fitness)</span>
+                                    <span class="stat-value text-emerald" id="stat-cctv-coverage">0.0%</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Titik Buta (Blind Spots)</span>
+                                    <span class="stat-value text-rose" id="stat-cctv-blind">100.0%</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Tumpang Tindih</span>
+                                    <span class="stat-value text-amber" id="stat-cctv-overlap">0.0%</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Generasi / Iterasi</span>
+                                    <span class="stat-value" id="stat-cctv-iteration">0</span>
+                                </div>
+                                <div class="stat-box grid-span-2-box">
+                                    <span class="stat-label">Waktu Komputasi</span>
+                                    <span class="stat-value font-mono" id="stat-cctv-time">0 ms</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Algorithm Config Card -->
+                        <div class="card config-card">
+                            <div class="card-header">
+                                <span class="card-title"><i class="fa-solid fa-gear"></i> Konfigurasi Algoritma</span>
+                            </div>
+                            <div class="config-tabs">
+                                <button class="cfg-tab-btn active" data-alg="cctv-hc">Hill Climbing</button>
+                                <button class="cfg-tab-btn" data-alg="cctv-sa">Simulated Annealing</button>
+                                <button class="cfg-tab-btn" data-alg="cctv-ga">Genetic Algorithm</button>
+                            </div>
+
+                            <div class="cfg-pane active" id="cfg-cctv-hc">
+                                <div class="control-group">
+                                    <label for="hc-variant-cctv">Varian Hill Climbing</label>
+                                    <select id="hc-variant-cctv" class="select-input">
+                                        <option value="simple">Simple Hill Climbing</option>
+                                        <option value="steepest" selected>Steepest-Ascent Hill Climbing</option>
+                                        <option value="stochastic">Stochastic Hill Climbing</option>
+                                    </select>
+                                </div>
+                                <div class="control-group">
+                                    <label for="hc-step-cctv">Ukuran Langkah Eksplorasi (px / derajat)</label>
+                                    <div class="range-container">
+                                        <input type="range" id="hc-step-cctv" min="2" max="30" value="10">
+                                        <span id="hc-step-cctv-val" class="badge">10</span>
+                                    </div>
+                                </div>
+                                <p class="help-text">Hill Climbing bekerja dengan mengeksplorasi posisi CCTV secara lokal (menggeser x, y atau mengubah sudut) dan mengambil solusi baru jika meningkatkan area cakupan.</p>
+                            </div>
+
+                            <div class="cfg-pane" id="cfg-cctv-sa">
+                                <div class="control-group-row">
+                                    <div class="control-group">
+                                        <label for="sa-t0-cctv">Suhu Awal ($T_0$)</label>
+                                        <input type="number" id="sa-t0-cctv" class="number-input" value="1000" min="10" max="10000">
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="sa-alpha-cctv">Cooling Rate ($\alpha$)</label>
+                                        <input type="number" id="sa-alpha-cctv" class="number-input" value="0.95" min="0.5" max="0.999" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label for="sa-tmin-cctv">Suhu Minimum ($T_{min}$)</label>
+                                    <input type="number" id="sa-tmin-cctv" class="number-input" value="0.01" min="0.0001" max="1" step="0.01">
+                                </div>
+                                <p class="help-text">Simulated Annealing memungkinkan penerimaan solusi penempatan CCTV yang lebih buruk di awal suhu tinggi guna keluar dari jebakan lokal, kemudian mengkristal seiring suhu menurun.</p>
+                            </div>
+
+                            <div class="cfg-pane" id="cfg-cctv-ga">
+                                <div class="control-group-row">
+                                    <div class="control-group">
+                                        <label for="ga-pop-cctv">Populasi</label>
+                                        <input type="number" id="ga-pop-cctv" class="number-input" value="40" min="10" max="200" step="10">
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="ga-elite-cctv">Elitisme</label>
+                                        <input type="number" id="ga-elite-cctv" class="number-input" value="2" min="0" max="10">
+                                    </div>
+                                </div>
+                                <div class="control-group-row">
+                                    <div class="control-group">
+                                        <label for="ga-pc-cctv">Prob Crossover</label>
+                                        <input type="number" id="ga-pc-cctv" class="number-input" value="0.8" min="0.1" max="1.0" step="0.05">
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="ga-pm-cctv">Prob Mutasi</label>
+                                        <input type="number" id="ga-pm-cctv" class="number-input" value="0.15" min="0.01" max="1.0" step="0.05">
+                                    </div>
+                                </div>
+                                <div class="control-group-row">
+                                    <div class="control-group">
+                                        <label for="ga-select-cctv">Metode Seleksi</label>
+                                        <select id="ga-select-cctv" class="select-input-sm">
+                                            <option value="tournament">Tournament</option>
+                                            <option value="roulette">Roulette Wheel</option>
+                                        </select>
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="ga-cross-cctv">Metode Crossover</label>
+                                        <select id="ga-cross-cctv" class="select-input-sm">
+                                            <option value="single">Single-Point</option>
+                                            <option value="multi">Multi-Point</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <p class="help-text">GA menyandikan posisi semua kamera sebagai satu kromosom. Populasi berevolusi melalui seleksi alam, rekombinasi tata letak (crossover), dan pergeseran acak (mutasi).</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation / Educational Box -->
+                <div class="card info-card margin-top">
+                    <h3><i class="fa-solid fa-graduation-cap"></i> Cara Kerja Optimasi CCTV</h3>
+                    <div class="info-content-grid">
+                        <div>
+                            <h4>Representasi Solusi</h4>
+                            <p>Sebuah solusi adalah sekumpulan koordinat dan sudut arah kamera. Jika gedung dipasangi 4 kamera, maka solusinya adalah vector riil: <code>[x1, y1, θ1, x2, y2, θ2, x3, y3, θ3, x4, y4, θ4]</code>.</p>
+                        </div>
+                        <div>
+                            <h4>Fungsi Fitness (Evaluasi)</h4>
+                            <p>Algoritma menguji solusi dengan memancarkan sinar pandang (raycasting) dari setiap kamera. Setiap piksel gedung yang tersentuh sinar dihitung sebagai cakupan. Fitness diturunkan jika ada kamera bertumpuk di titik sama atau saling melihat area yang sama (Overlap Penalty) serta kamera berada di dalam dinding.</p>
+                        </div>
+                        <div>
+                            <h4>Tantangan Non-linear</h4>
+                            <p>Dinding gedung memicu perubahan drastis pada cakupan visual. Pergeseran koordinat $1\text{ px}$ saja di dekat sudut dinding bisa memblokir $50\%$ pandangan kamera. Ini menciptakan lanskap optimasi non-linear yang sangat kasar dan menantang bagi algoritma pencarian lokal konvensional.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 2: LOCAL OPTIMA & BENCHMARK FUNCTIONS -->
+            <section class="tab-pane" id="tab-benchmark">
+                <div class="dashboard-grid">
+                    <!-- Column 1: Canvas for Rastrigin Contour Map -->
+                    <div class="canvas-card card grid-span-2">
+                        <div class="card-header">
+                            <span class="card-title"><i class="fa-solid fa-mountain-sun"></i> Kontur Lanskap Fungsi Rastrigin (2D & Deteksi Lintasan)</span>
+                            <div class="canvas-actions">
+                                <span class="badge badge-info"><i class="fa-solid fa-circle-info"></i> Global Optima: (0.00, 0.00) dengan Nilai = 0</span>
+                            </div>
+                        </div>
+                        <div class="canvas-wrapper">
+                            <canvas id="benchmark-canvas" width="600" height="400"></canvas>
+                            <div class="legend-panel">
+                                <div class="legend-item"><span class="legend-dot dot-global"></span> Global Minima (0)</div>
+                                <div class="legend-item"><span class="legend-dot dot-local"></span> Local Minima</div>
+                                <div class="legend-item"><span class="legend-dot dot-plateau"></span> Plateau (Datar)</div>
+                                <div class="legend-item"><span class="legend-dot dot-ridge"></span> Ridge (Punggungan)</div>
+                            </div>
+                        </div>
+                        <div class="sim-controls">
+                            <div class="btn-group">
+                                <button class="btn btn-primary" id="btn-bench-play">
+                                    <i class="fa-solid fa-play"></i> Mulai
+                                </button>
+                                <button class="btn btn-secondary" id="btn-bench-step">
+                                    <i class="fa-solid fa-forward-step"></i> Langkah
+                                </button>
+                                <button class="btn btn-danger" id="btn-bench-pause" disabled>
+                                    <i class="fa-solid fa-pause"></i> Jeda
+                                </button>
+                                <button class="btn btn-outline" id="btn-bench-reset">
+                                    <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                                </button>
+                            </div>
+                            <div class="restart-wrapper">
+                                <label class="switch-container">
+                                    <input type="checkbox" id="bench-restart-toggle">
+                                    <span class="switch-slider"></span>
+                                </label>
+                                <span>Random Restart (HC)</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Parameters Panel & Live Statistics -->
+                    <div class="sidebar-card-grid grid-span-1">
+                        <!-- Live Stats Card -->
+                        <div class="card stats-card">
+                            <div class="card-header">
+                                <span class="card-title"><i class="fa-solid fa-chart-bar"></i> Metrik Lanskap</span>
+                            </div>
+                            <div class="stats-grid">
+                                <div class="stat-box">
+                                    <span class="stat-label">Nilai Fungsi f(x, y)</span>
+                                    <span class="stat-value text-emerald font-mono" id="stat-bench-value">20.000</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Koordinat (x, y)</span>
+                                    <span class="stat-value font-mono" id="stat-bench-coords">(0.00, 0.00)</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Jenis Landskap</span>
+                                    <span class="stat-value text-amber" id="stat-bench-status">Memulai...</span>
+                                </div>
+                                <div class="stat-box">
+                                    <span class="stat-label">Iterasi / Langkah</span>
+                                    <span class="stat-value" id="stat-bench-iteration">0</span>
+                                </div>
+                                <div class="stat-box grid-span-2-box">
+                                    <span class="stat-label">Status Pencarian</span>
+                                    <span class="stat-value text-sm" id="stat-bench-desc">Klik Mulai untuk simulasi</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Algorithm Config Card -->
+                        <div class="card config-card">
+                            <div class="card-header">
+                                <span class="card-title"><i class="fa-solid fa-gear"></i> Parameter Algoritma</span>
+                            </div>
+                            <div class="config-tabs">
+                                <button class="cfg-tab-btn active" data-alg="bench-hc">Hill Climbing</button>
+                                <button class="cfg-tab-btn" data-alg="bench-sa">Simulated Annealing</button>
+                                <button class="cfg-tab-btn" data-alg="bench-ga">Genetic Algorithm</button>
+                            </div>
+
+                            <div class="cfg-pane active" id="cfg-bench-hc">
+                                <div class="control-group">
+                                    <label for="hc-variant-bench">Varian Hill Climbing</label>
+                                    <select id="hc-variant-bench" class="select-input">
+                                        <option value="simple">Simple Hill Climbing</option>
+                                        <option value="steepest" selected>Steepest-Ascent Hill Climbing</option>
+                                        <option value="stochastic">Stochastic Hill Climbing</option>
+                                    </select>
+                                </div>
+                                <div class="control-group">
+                                    <label for="hc-step-bench">Langkah Gangguan (Neighbourhood dx/dy)</label>
+                                    <div class="range-container">
+                                        <input type="range" id="hc-step-bench" min="1" max="100" value="15" step="1">
+                                        <span id="hc-step-bench-val" class="badge">0.15</span>
+                                    </div>
+                                </div>
+                                <p class="help-text">Di sini Anda akan melihat bagaimana Hill Climbing konvensional tanpa restart hampir selalu terjebak di local optima terdekat dan gagal mencapai puncak global pusat (0,0).</p>
+                            </div>
+
+                            <div class="cfg-pane" id="cfg-bench-sa">
+                                <div class="control-group-row">
+                                    <div class="control-group">
+                                        <label for="sa-t0-bench">Suhu Awal ($T_0$)</label>
+                                        <input type="number" id="sa-t0-bench" class="number-input" value="100" min="5" max="5000">
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="sa-alpha-bench">Cooling Rate ($\alpha$)</label>
+                                        <input type="number" id="sa-alpha-bench" class="number-input" value="0.90" min="0.5" max="0.99" step="0.01">
+                                    </div>
+                                </div>
+                                <div class="control-group">
+                                    <label for="sa-tmin-bench">Suhu Minimum ($T_{min}$)</label>
+                                    <input type="number" id="sa-tmin-bench" class="number-input" value="0.01" min="0.001" max="0.5" step="0.01">
+                                </div>
+                                <p class="help-text">Simulated Annealing akan menunjukkan eksplorasi acak tak tentu di awal (ketika warna titik menyebar melintasi puncak-lembah) dan melambat memusat di global optimum.</p>
+                            </div>
+
+                            <div class="cfg-pane" id="cfg-bench-ga">
+                                <div class="control-group-row">
+                                    <div class="control-group">
+                                        <label for="ga-pop-bench">Populasi</label>
+                                        <input type="number" id="ga-pop-bench" class="number-input" value="30" min="10" max="100" step="5">
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="ga-elite-bench">Elitism</label>
+                                        <input type="number" id="ga-elite-bench" class="number-input" value="2" min="0" max="5">
+                                    </div>
+                                </div>
+                                <div class="control-group-row">
+                                    <div class="control-group">
+                                        <label for="ga-pc-bench">Prob Crossover</label>
+                                        <input type="number" id="ga-pc-bench" class="number-input" value="0.8" min="0.1" max="1.0" step="0.05">
+                                    </div>
+                                    <div class="control-group">
+                                        <label for="ga-pm-bench">Prob Mutasi</label>
+                                        <input type="number" id="ga-pm-bench" class="number-input" value="0.10" min="0.01" max="0.5" step="0.01">
+                                    </div>
+                                </div>
+                                <p class="help-text">Genetic Algorithm menyebarkan populasi individu di seluruh peta kontur. Melalui persilangan dan seleksi alam, populasi lambat laun berkerumun menuju pusat optimum.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Explanation / Educational Box -->
+                <div class="card info-card margin-top">
+                    <h3><i class="fa-solid fa-graduation-cap"></i> Memahami Landskap Pencarian Lokal</h3>
+                    <div class="info-content-grid">
+                        <div>
+                            <h4><span class="legend-dot dot-local" style="display:inline-block; vertical-align:middle; position:relative; top:-2px;"></span> Local Optima</h4>
+                            <p>Kondisi di mana titik pencarian dikelilingi oleh tetangga yang semuanya memiliki nilai lebih buruk. Di sinilah algoritma Hill Climbing murni akan berhenti berpikir ia telah mencapai solusi terbaik, padahal ia terjebak pada puncak bukit kecil.</p>
+                        </div>
+                        <div>
+                            <h4><span class="legend-dot dot-plateau" style="display:inline-block; vertical-align:middle; position:relative; top:-2px;"></span> Plateau & Flat Area</h4>
+                            <p>Daerah datar di mana seluruh tetangga memiliki nilai evaluasi yang sama. Hill Climbing murni akan mengalami disorientasi di sini karena tidak ada gradien naik yang memandunya, membuatnya bergerak acak tanpa arah.</p>
+                        </div>
+                        <div>
+                            <h4><span class="legend-dot dot-ridge" style="display:inline-block; vertical-align:middle; position:relative; top:-2px;"></span> Ridge (Punggungan)</h4>
+                            <p>Punggungan sempit bergradien sangat miring di kanan-kiri tetapi naik sangat landai di sepanjang punggung. Hill Climbing sering kali berosilasi maju mundur menyeberangi punggungan tanpa berhasil mendaki ke atas karena langkahnya yang terlalu kaku.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: COMPARATIVE ANALYSIS -->
+            <section class="tab-pane" id="tab-comparison">
+                <!-- Comparative Dashboard Header Controls -->
+                <div class="card config-card-full margin-bottom">
+                    <div class="comp-control-bar">
+                        <div class="comp-control-item">
+                            <label for="comp-cctv-count">Jumlah Kamera CCTV</label>
+                            <select id="comp-cctv-count" class="select-input-sm-inline">
+                                <option value="3">3 Kamera</option>
+                                <option value="4" selected>4 Kamera</option>
+                                <option value="5">5 Kamera</option>
+                                <option value="6">6 Kamera</option>
+                            </select>
+                        </div>
+                        <div class="comp-control-item">
+                            <label for="comp-max-iterations">Batas Maks. Iterasi</label>
+                            <input type="number" id="comp-max-iterations" class="number-input-sm-inline" value="200" min="50" max="1000" step="50">
+                        </div>
+                        <div class="comp-btn-wrapper">
+                            <button class="btn btn-primary btn-large" id="btn-run-comparison">
+                                <i class="fa-solid fa-circle-play"></i> Mulai Analisis Komparatif
+                            </button>
+                            <button class="btn btn-outline" id="btn-reset-comparison" disabled>
+                                <i class="fa-solid fa-arrow-rotate-left"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container" id="comp-progress-container" style="display: none;">
+                        <div class="progress-bar-fill" id="comp-progress-fill" style="width: 0%;"></div>
+                        <span id="comp-progress-label">Memproses Komparasi: Hill Climbing...</span>
+                    </div>
+                </div>
+
+                <!-- Analysis Charts -->
+                <div class="dashboard-grid">
+                    <!-- Convergence Curve -->
+                    <div class="card grid-span-2 chart-card">
+                        <div class="card-header">
+                            <span class="card-title"><i class="fa-solid fa-chart-area"></i> Kurva Konvergensi (Fitness vs Iterasi)</span>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-convergence"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- SA Temperature Schedule & GA Diversity -->
+                    <div class="card grid-span-1 chart-card">
+                        <div class="card-header">
+                            <span class="card-title"><i class="fa-solid fa-chart-line"></i> Grafik Diagnostik Khusus</span>
+                            <select id="diagnostic-chart-select" class="select-input-sm-inline">
+                                <option value="sa-cooling">SA: Penurunan Suhu & Penerimaan Solusi Buruk</option>
+                                <option value="ga-fitness">GA: Fitness Terbaik vs Rata-rata Populasi</option>
+                            </select>
+                        </div>
+                        <div class="chart-container">
+                            <canvas id="chart-diagnostic"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Comparison Table -->
+                <div class="card margin-top">
+                    <div class="card-header">
+                        <span class="card-title"><i class="fa-solid fa-table"></i> Tabel Ringkasan Kinerja Algoritma</span>
+                    </div>
+                    <div class="table-wrapper">
+                        <table class="comparison-table" id="table-results">
+                            <thead>
+                                <tr>
+                                    <th>Algoritma</th>
+                                    <th>Kualitas Solusi (Cakupan CCTV)</th>
+                                    <th>Tumpeng Tindih (Overlap)</th>
+                                    <th>Jumlah Iterasi</th>
+                                    <th>Waktu Eksekusi (ms)</th>
+                                    <th>Status Keluar</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="row-hc">
+                                    <td class="alg-name-col"><i class="fa-solid fa-person-climbing"></i> Hill Climbing (Steepest)</td>
+                                    <td class="font-mono text-emerald" id="cell-hc-fit">-</td>
+                                    <td class="font-mono" id="cell-hc-overlap">-</td>
+                                    <td class="font-mono" id="cell-hc-iter">-</td>
+                                    <td class="font-mono" id="cell-hc-time">-</td>
+                                    <td class="status-col" id="cell-hc-status"><span class="badge badge-secondary">Belum Dijalankan</span></td>
+                                </tr>
+                                <tr id="row-sa">
+                                    <td class="alg-name-col"><i class="fa-solid fa-fire"></i> Simulated Annealing</td>
+                                    <td class="font-mono text-emerald" id="cell-sa-fit">-</td>
+                                    <td class="font-mono" id="cell-sa-overlap">-</td>
+                                    <td class="font-mono" id="cell-sa-iter">-</td>
+                                    <td class="font-mono" id="cell-sa-time">-</td>
+                                    <td class="status-col" id="cell-sa-status"><span class="badge badge-secondary">Belum Dijalankan</span></td>
+                                </tr>
+                                <tr id="row-ga">
+                                    <td class="alg-name-col"><i class="fa-solid fa-dna"></i> Genetic Algorithm</td>
+                                    <td class="font-mono text-emerald" id="cell-ga-fit">-</td>
+                                    <td class="font-mono" id="cell-ga-overlap">-</td>
+                                    <td class="font-mono" id="cell-ga-iter">-</td>
+                                    <td class="font-mono" id="cell-ga-time">-</td>
+                                    <td class="status-col" id="cell-ga-status"><span class="badge badge-secondary">Belum Dijalankan</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <!-- Custom Simulation Modules -->
+    <script src="cctv-problem.js"></script>
+    <script src="benchmark-problem.js"></script>
+    <script src="algorithms.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
